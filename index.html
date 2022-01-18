@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Nunito&display=swap" rel="stylesheet">
+    <title>Se3313 OS Groupchat</title>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+
+<body onload = "connectNewRoom()">
+    
+    <h1>Use this to talk to your Friends</h1>
+    
+    <div>
+        <p>
+            Welcome to our SE3313 Final Project. To start enter a nickname and send a message.
+        </p>
+    </div>
+    
+    
+    <label>Enter Private Room:</label>
+    <input  type = "text" name = "newroom" id = "newroom">
+    <button onclick= "addRoom()"> Enter New Room </button>
+    
+    
+    <form id="chatroom">
+        <label>Username: </label>
+        <input type="text" id="un" name="un" placeholder = "Username" value ="Anonymous" />
+        <br>
+        <br>
+        <label>Mood: </label>
+        <select name="mood" id ="mood">
+            <option value = "Happy">Happy</option>
+            <option value = "Sad">Sad</option>
+            <option value = "Angry">Angry</option>
+            <option value = "Amped">Amped</option>
+            <option value = "Marved">Marved</option>
+        </select>
+        <br>
+        <br>
+        <label>Select Room:</label>
+        <select name="room" id ="room" onChange = "connectNewRoom(this.value)">
+            <option value = "Study">Study</option>
+            <option value = "Party">Party</option>
+        </select>
+        
+        
+        
+        
+        
+        <br>
+        <div id="history" style="overflow:auto; height:400px;"></div>
+        <input type="text" id="msg_text" name="msg_text" placeholder = "Type message"/>
+        <input type="submit" value="Send!" />
+    </form>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+        var socket = io.connect();
+        var oldRoom = undefined;
+        
+        function addRoom() {
+            newroom = document.getElementById('newroom');
+            roomselect = document.getElementById('room')
+            newroomval = newroom.value.toLowerCase()
+            
+            newroomoption = document.createElement('option');
+            newroomoption.setAttribute('value', newroomval);
+            newroomoption.innerText = newroomval;
+            
+            roomselect.appendChild(newroomoption);
+            roomselect.value = newroomval;
+            connectNewRoom(newroomval);
+            newroom.value = "";
+            
+        }
+        
+        function connectNewRoom(roomVal) {
+            console.log('oldRoom'+oldRoom);
+            if(roomVal == undefined) {
+                roomVal= 'Study';
+            }
+            
+            socket.emit('room', roomVal.toLowerCase(), oldRoom);
+            oldRoom = roomVal.toLowerCase();
+            
+            chat = document.getElementById('history');
+            chat.innerHTML = ' '
+        }
+        
+        $("form#chatroom").submit(function(e) {
+            // takes username, message, and user's 'mood' and sends to server
+            var msg =  $(this).find("#msg_text").val();
+            var username = $(this).find("#un").val()
+            var mood = $(this).find("#mood").val()
+            var room = $(this).find("#room").val().toLowerCase();
+            e.preventDefault();
+            
+            if(username.trim() == ''){
+                window.alert('Enter a username to send message');
+                return 
+            }
+            
+            if(room == 'admin' && msg == 'server'){
+                window.alert('Initiating admin server shutdown sequence');
+            }
+            socket.emit("send message", msg, username, mood, room, function() {
+                $("form#chatroom #msg_text").val("");
+            });
+        });
+        
+        
+// 		 receives message from backend and updates on chat history
+		socket.on("update messages", function(msg){
+		var final_message = $("<p />").text(msg);
+		   $("#history").append(final_message);
+		});
+    </script>
+</body>
+
+</html>
